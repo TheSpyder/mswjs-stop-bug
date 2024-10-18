@@ -1,0 +1,19 @@
+{
+  "name": "mswjs-stop-bug",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "esbuild --bundle src/client.mjs --outfile=public/bundle.js && node src/server.mjs"
+  },
+  "devDependencies": {
+    "express": "^4.21.1",
+    "msw": "^2.4.11"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "esbuild": "^0.24.0"
+  }
+}
