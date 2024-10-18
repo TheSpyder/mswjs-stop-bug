@@ -28,9 +28,10 @@ const run = async () => {
   // This needs to be async
   worker.stop();
 
-  // Uncomment this to see that it works since it has time to recieve the post message
-  // await new Promise((resolve) => setTimeout(resolve, 1000));
-  
+  // Uncomment this workaround since this will make sure that the message that stop sent has been received 
+  // worker.context.workerChannel.send('INTEGRITY_CHECK_REQUEST');
+  // await worker.context.events.once('INTEGRITY_CHECK_RESPONSE');
+
   // Load image though outside service worker. This is sometimes not loaded at all or still through the service worker
   await loadImage('/image.png?bust=2');
 };
