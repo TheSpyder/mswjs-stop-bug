@@ -16728,16 +16728,25 @@ Please consider using a custom "serviceWorker.url" option to point to the actual
   var loadImage = async (src) => {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve();
+      img.onload = () => {
+        p.replaceChildren(img);
+        resolve();
+      };
       img.onerror = reject;
       img.src = src;
-      document.body.appendChild(img);
+      const p = document.createElement("p");
+      document.body.appendChild(p);
+      p.appendChild(document.createTextNode(`Loading image...`));
     });
   };
   var run = async () => {
     const worker = setupWorker(...[
-      http.all(/.*/, () => passthrough())
-      // Passthough everything
+      http.get(/.*/, async ({ request }) => {
+        if (request.url.includes("slow=yes")) {
+          await new Promise((resolve) => setTimeout(resolve, 1e3));
+        }
+        return passthrough();
+      })
     ]);
     await worker.start({
       serviceWorker: {
@@ -16745,8 +16754,9 @@ Please consider using a custom "serviceWorker.url" option to point to the actual
       }
     });
     await loadImage("/image.png?bust=1");
+    loadImage("/image.png?slow=yes");
+    await new Promise((resolve) => setTimeout(resolve, 500));
     worker.stop();
-    await loadImage("/image.png?bust=2");
   };
   run().then(() => console.log("Done"));
 })();

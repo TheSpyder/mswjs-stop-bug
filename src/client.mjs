@@ -4,16 +4,26 @@ import { setupWorker } from 'msw/browser';
 const loadImage = async (src) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve();
+    img.onload = () => {
+      p.replaceChildren(img);
+      resolve();
+    };
     img.onerror = reject;
     img.src = src;
-    document.body.appendChild(img);
+    const p = document.createElement('p');
+    document.body.appendChild(p);
+    p.appendChild(document.createTextNode(`Loading image...`));
   });
 };
 
 const run = async () => {
   const worker = setupWorker(...[
-    http.all(/.*/, () => passthrough()) // Passthough everything
+    http.get(/.*/, async ({request}) => {
+      if (request.url.includes('slow=yes')) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      return passthrough();
+    })
   ]);
 
   await worker.start({
@@ -22,18 +32,18 @@ const run = async () => {
     }
   });
 
-  // Load image through service worker
+  // Load image through service worker, to show it works
   await loadImage('/image.png?bust=1');
 
-  // This needs to be async
+  // Load image though service worker, which will not resolve in time
+  loadImage('/image.png?slow=yes');
+
+  // make sure the worker receives the image request
+  // setting this to 500ms does show the second image but also leaves an unresolved HTTP request?
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  // This will often cause the `passthrough` of the second request to be ignored
   worker.stop();
-
-  // Uncomment this workaround since this will make sure that the message that stop sent has been received 
-  // worker.context.workerChannel.send('INTEGRITY_CHECK_REQUEST');
-  // await worker.context.events.once('INTEGRITY_CHECK_RESPONSE');
-
-  // Load image though outside service worker. This is sometimes not loaded at all or still through the service worker
-  await loadImage('/image.png?bust=2');
 };
 
 run().then(() => console.log('Done'));
